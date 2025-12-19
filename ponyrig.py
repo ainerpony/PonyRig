@@ -486,44 +486,43 @@ class PONY_PT_fk_properties(PonyRigPanel, Panel):
         return get_ponyrig()
 
 
+def draw_bone_property(
+    layout: UILayout, 
+    rig: Object, 
+    prop_owner_name: str, 
+    prop_name: str, 
+    slider_name="", 
+    texts=[], 
+    icon_true="CHECKBOX_HLT", 
+    icon_false='CHECKBOX_DEHLT'
+):
+    prop_owner = rig.pose.bones.get(prop_owner_name)
+    if prop_owner is None:
+        layout.alert = True
+        layout.label(text=f'Missing property owner: "{prop_owner_name}"', icon="ERROR")
+        return
+    try:
+        prop_value = prop_owner.path_resolve(f'["{prop_name}"]')
+    except ValueError:
+        layout.alert = True
+        layout.label(text=f'Missing property: "{prop_name}", owner: "{prop_owner_name}"', icon="ERROR")
+        return
+
+    if len(texts) > 0 and type(prop_value) == int:
+        text = slider_name + ": " + texts[prop_value]
+        layout.prop(prop_owner, f'["{prop_name}"]', text=text, slider=True)
+    elif type(prop_value) == float:
+        layout.prop(prop_owner, f'["{prop_name}"]', text=slider_name, slider=True)
+    elif type(prop_value) == bool:
+        icon = icon_true if prop_value else icon_false
+        layout.prop(prop_owner, f'["{prop_name}"]', text=slider_name, toggle=True, icon=icon)
+    else:
+        layout.prop(prop_owner, f'["{prop_name}"]', text=slider_name)
+
+
 class PONY_PT_face_properties(PonyRigPanel, Panel):
     bl_parent_id = 'PONY_PT_MAIN'
     bl_label = 'Face'
-
-    def draw_eye_target_prop(self, prop_owner:str, prop_name:str, layout:UILayout):
-        rig = get_ponyrig()
-        row = layout.row(align=True)
-        text_set = ['Master', 'Head', 'COG']
-        pose_bone = rig.pose.bones.get(prop_owner)
-
-        if pose_bone is None:
-            row.alert = True
-            row.label(text=f'Missing property owner: "{prop_owner}"', icon="ERROR")
-            return
-
-        try:
-            prop_value = pose_bone.path_resolve(f'["{prop_name}"]')
-
-            row.prop(pose_bone, f'["{prop_name}"]', text=f"Eye Target Parent: {text_set[prop_value]}", slider=True)
-        except ValueError:
-            row.alert = True
-            row.label(text=f'Missing property: "{prop_name}", owner: "{prop_owner}"', icon="ERROR")
-
-    def draw_lip_zipper_prop(self, prop_owner:str, prop_name:str, text:str, layout:UILayout):
-        rig = get_ponyrig()
-        pose_bone = rig.pose.bones.get(prop_owner)
-
-        if pose_bone is None:
-            layout.alert = True
-            layout.label(text=f'Missing property owner: "{prop_owner}"', icon="ERROR")
-            return
-
-        try:
-            pose_bone.path_resolve(f'["{prop_name}"]')
-            layout.prop(pose_bone, f'["{prop_name}"]', text=text, slider=True)
-        except ValueError:
-            layout.alert = True
-            layout.label(text=f'Missing property: "{prop_name}", owner: "{prop_owner}"', icon="ERROR")
 
     def draw(self, context):
         layout = self.layout
@@ -533,12 +532,25 @@ class PONY_PT_face_properties(PonyRigPanel, Panel):
         }
 
         """Draw eyetarget properties"""
-        self.draw_eye_target_prop('properties', 'eye_target_parents', layout.box())
+        draw_bone_property(
+            layout.box(),
+            get_ponyrig(),
+            prop_owner_name='properties',
+            prop_name='eye_target_parents',
+            slider_name="Eye Target Parent",
+            texts=['Master', 'Head', 'COG']
+        )
 
         """Draw lip zipper properties"""
         column = layout.box().column()
         for owner, prop, text in zipper_prop:
-            self.draw_lip_zipper_prop(owner, prop, text, column)
+            draw_bone_property(
+                layout=column,
+                rig=get_ponyrig(),
+                prop_owner_name=owner,
+                prop_name=prop,
+                slider_name=text
+            )
 
 
 class PONY_UL_collections(UIList):
