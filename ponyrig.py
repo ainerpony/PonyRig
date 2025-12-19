@@ -490,7 +490,7 @@ class PONY_PT_face_properties(PonyRigPanel, Panel):
     bl_parent_id = 'PONY_PT_MAIN'
     bl_label = 'Face'
 
-    def draw_eye_target_properties(self, prop_owner:str, prop_name:str, layout:UILayout):
+    def draw_eye_target_prop(self, prop_owner:str, prop_name:str, layout:UILayout):
         rig = get_ponyrig()
         row = layout.row(align=True)
         text_set = ['Master', 'Head', 'COG']
@@ -509,9 +509,36 @@ class PONY_PT_face_properties(PonyRigPanel, Panel):
             row.alert = True
             row.label(text=f'Missing property: "{prop_name}", owner: "{prop_owner}"', icon="ERROR")
 
+    def draw_lip_zipper_prop(self, prop_owner:str, prop_name:str, text:str, layout:UILayout):
+        rig = get_ponyrig()
+        pose_bone = rig.pose.bones.get(prop_owner)
+
+        if pose_bone is None:
+            layout.alert = True
+            layout.label(text=f'Missing property owner: "{prop_owner}"', icon="ERROR")
+            return
+
+        try:
+            pose_bone.path_resolve(f'["{prop_name}"]')
+            layout.prop(pose_bone, f'["{prop_name}"]', text=text, slider=True)
+        except ValueError:
+            layout.alert = True
+            layout.label(text=f'Missing property: "{prop_name}", owner: "{prop_owner}"', icon="ERROR")
+
     def draw(self, context):
         layout = self.layout
-        self.draw_eye_target_properties('properties', 'eye_target_parents', layout)
+        zipper_prop = {
+            ("L_lipCorner_ctrl", "L_zipper_lip", "L Lip Zipper"),
+            ("R_lipCorner_ctrl", "R_zipper_lip", "R Lip Zipper")
+        }
+
+        """Draw eyetarget properties"""
+        self.draw_eye_target_prop('properties', 'eye_target_parents', layout.box())
+
+        """Draw lip zipper properties"""
+        column = layout.box().column()
+        for owner, prop, text in zipper_prop:
+            self.draw_lip_zipper_prop(owner, prop, text, column)
 
 
 class PONY_UL_collections(UIList):
