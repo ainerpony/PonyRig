@@ -96,7 +96,7 @@ def draw_bone_property(
         layout.label(text=f'Missing property owner: "{prop_owner_name}"', icon="ERROR")
         return
     try:
-        prop_value = prop_owner.path_resolve(f'["{prop_name}"]')
+        prop_value = prop_owner.path_resolve(f'["{prop_name}"]') # Property existence check.
     except ValueError:
         layout.alert = True
         layout.label(text=f'Missing property: "{prop_name}", owner: "{prop_owner_name}"', icon="ERROR")
@@ -439,28 +439,18 @@ class PONY_PT_bone_properties(PonyRigPanel, Panel):
             if n != 2 and n % 2 == 0:
                 row = box.row()
 
-            pose_bone = bones.get(bone_name)
-            if pose_bone:
-                try:
-                    pose_bone.path_resolve(f'["{prop_name}"]') # Property existence check.
-                    sub_row = row.row(align=True)
-                    sub_row.prop(pose_bone, f'["{prop_name}"]', text=bone_alias[bone_name], slider=True, translate=False)
-
-                    if snap_bake:
-                        """Draw 'Snap & Bake' operator at the end of each slider"""
-                        op = sub_row.operator('pose.ponyrig_snap_bake', text="", icon='FILE_REFRESH')
-                        op.prop_owner_name = bone_name
-                        op.prop_name = prop_name
-                        op.affect_bones = f"{bone_affect[bone_name]}"
-
-                except ValueError:
-                    sub_row = row.row(align=True)
-                    sub_row.alert = True
-                    sub_row.label(text=f"Missing property in '{bone_name}': '{prop_name}'", icon="ERROR")
-
-            else:
-                row.alert = True
-                row.label(text=f"Missing prop bone: '{bone_name}'", icon="ERROR")
+            sub_row = row.row(align=True)
+            draw_bone_property(
+                sub_row,
+                armature, bone_name, prop_name, 
+                slider_name=bone_alias[bone_name]
+            )
+            if snap_bake:
+                """Draw 'Snap & Bake' operator at the end of each slider"""
+                op = sub_row.operator('pose.ponyrig_snap_bake', text="", icon='FILE_REFRESH')
+                op.prop_owner_name = bone_name
+                op.prop_name = prop_name
+                op.affect_bones = f"{bone_affect[bone_name]}"
 
     def draw(self, context):
         layout = self.layout
