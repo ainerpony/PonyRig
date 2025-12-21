@@ -531,6 +531,15 @@ class PONY_PT_face_properties(PonyRigPanel, Panel):
                 slider_name=text
             )
 
+        """Draw jaw influence prop"""
+        draw_bone_property(
+            layout.box(),
+            get_ponyrig(),
+            prop_owner_name='jaw_ctrl',
+            prop_name='jaw_influence',
+            slider_name="Lip Corner Jaw Influence",
+        )
+
 
 class PONY_UL_collections(UIList):
     """Draw outline items in a UIList"""
