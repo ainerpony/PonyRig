@@ -149,7 +149,7 @@ class PONY_PT_MAIN(PonyRigPanel, Panel):
 
         try:
             prop_val = prop_owner.path_resolve(f'["{prop_name}"]')
-            text = ['Performance', 'Default', 'Render']
+            text = ['Performance', 'High', 'Render']
             layout.prop(prop_owner, f'["{prop_name}"]', text=f"Viewport Quality: {text[prop_val]}", slider=True)
         except ValueError:
             layout.alert = True
