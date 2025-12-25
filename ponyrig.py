@@ -88,7 +88,8 @@ def draw_bone_property(
     slider_name="",
     texts=[],
     icon_true="CHECKBOX_HLT",
-    icon_false='CHECKBOX_DEHLT'
+    icon_false='CHECKBOX_DEHLT',
+    translate=False
 ):
     prop_owner = rig.pose.bones.get(prop_owner_name)
     if prop_owner is None:
@@ -104,14 +105,14 @@ def draw_bone_property(
 
     if len(texts) > 0 and type(prop_value) == int:
         text = slider_name + ": " + texts[prop_value]
-        layout.prop(prop_owner, f'["{prop_name}"]', text=text, slider=True)
+        layout.prop(prop_owner, f'["{prop_name}"]', text=text, slider=True, translate=translate)
     elif type(prop_value) == float:
-        layout.prop(prop_owner, f'["{prop_name}"]', text=slider_name, slider=True)
+        layout.prop(prop_owner, f'["{prop_name}"]', text=slider_name, slider=True, translate=translate)
     elif type(prop_value) == bool:
         icon = icon_true if prop_value else icon_false
-        layout.prop(prop_owner, f'["{prop_name}"]', text=slider_name, toggle=True, icon=icon)
+        layout.prop(prop_owner, f'["{prop_name}"]', text=slider_name, toggle=True, icon=icon, translate=translate)
     else:
-        layout.prop(prop_owner, f'["{prop_name}"]', text=slider_name)
+        layout.prop(prop_owner, f'["{prop_name}"]', text=slider_name, translate=translate)
 
 
 class PonyRig_OutlineItem(PropertyGroup):
