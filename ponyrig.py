@@ -273,8 +273,7 @@ class PONY_PT_bone_collections(PonyRigPanel, Panel):
 class POSE_OT_snap_bake(Operator):
     """
     Snap and bake FK bones to IK bones or FK to itself.
-    TODO: Snap IK to FK
-    """
+    TODO: Snap IK to FK"""
 
     bl_idname = 'pose.ponyrig_snap_bake'
     bl_label = 'Snap & Bake Bones'
