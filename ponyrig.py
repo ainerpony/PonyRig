@@ -239,12 +239,14 @@ class PONY_PT_bone_collections(PonyRigPanel, Panel):
                 box = column.box()
                 sub_column = box.column()
                 row = sub_column.row()
-                n = 1
+                max_row = 2                    # number of prop to be drawn in one line
+                row_index = -1
 
                 for sub_coll in coll.children:
-                    n += 1
-                    if n != 2 and n % 2 == 0:     # Start a new line after drawing two props.
+                    row_index += 1
+                    if row_index == max_row:   # Start a new line after drawing max_row props.
                         row = sub_column.row()
+                        row_index %= max_row   # Point to row head when start a new line
 
                     icon = 'HIDE_OFF' if sub_coll.is_visible else 'HIDE_ON'
                     row.prop(
@@ -429,15 +431,16 @@ class PONY_PT_bone_properties(PonyRigPanel, Panel):
     bl_label = 'FK/IK Switch'
 
     def draw_bone_props(self, armature:Object, prop_owner:list[str], prop_name:str, layout:UILayout, snap_bake:bool=False):
-        bones = armature.pose.bones
         box = layout.box()
         row = box.row()
-        n = 1
+        row_index = -1
+        max_row = 2        # number of row to be drawn in one line
 
         for bone_name in prop_owner:
-            n += 1
-            if n != 2 and n % 2 == 0:
+            row_index += 1
+            if row_index == max_row:
                 row = box.row()
+                row_index %= max_row
 
             sub_row = row.row(align=True)
             draw_bone_property(
