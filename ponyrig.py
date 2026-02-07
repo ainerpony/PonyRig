@@ -19,6 +19,7 @@ from bpy.types import (
     Collection,
     Context,
     Panel,
+    PoseBone,
     UIList,
     Object,
     UILayout,
@@ -191,6 +192,12 @@ class PONY_PT_MAIN(PonyRigPanel, Panel):
             icon = "CHECKBOX_HLT" if shading.show_backface_culling else "CHECKBOX_DEHLT"
             layout.prop(shading, "show_backface_culling", icon=icon)
 
+    def draw_keyframe_all_ctrl_bones(self, context:Context, layout:UILayout):
+        pass
+
+    def draw_reset_bones(self, context:Context, layout:UILayout):
+        layout.operator('pose.ponyrig_rest', text="Reset Rig", icon='LOOP_BACK')
+
     def draw(self, context):
         layout = self.layout
         rig = get_ponyrig()
@@ -203,6 +210,9 @@ class PONY_PT_MAIN(PonyRigPanel, Panel):
             row = layout.row()
             self.draw_show_in_front_option(rig, row)
             self.draw_backface_culling_option(context, row)
+
+            row = layout.row()
+            self.draw_reset_bones(context, row)
         else:
             self.draw_backface_culling_option(context, layout.row())
             row = layout.row()
@@ -348,7 +358,7 @@ class POSE_OT_snap_bake(Operator):
         prop_owner = rig.pose.bones.get(self.prop_owner_name)
         prop_name = self.prop_name                                             # format: "FK/IK"
         prop_val = prop_owner.path_resolve(f'["{prop_name}"]')
-        keying_set = ["location", "scale", "rotation_quaternion"]
+        keying_set = ["location", "rotation_quaternion", "scale"]
         snap_matrix = self.get_matrix(rig, affect_bones)                       # Get current matrix before snapping
 
         if self.prop_name == "FK/IK" and prop_val == 0: return {'CANCELLED'}   # Snap IK to FK isn't support yet.
@@ -778,13 +788,111 @@ class OBJECT_OT_config_solid_shading(Operator):
         return self.config_solid_shading(context, shader_config)
 
 
+class POSE_OT_ponyrig_keyframe_all_ctrl_bones(Operator):
+    """Keyframe all control bones"""
+
+    bl_idname = 'pose.ponyrig_keyframe_all_ctrl_bones'
+    bl_label = 'Keyframe All Ctrl Bones'
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def keyframe_bone_from_collections(self, rig:Object, excluded_collections:list[str], keying_set:list[str], frame:int):
+        armature = bpy.data.armatures.get(rig.name)
+
+        for collection in armature.collections:
+            if collection.name in excluded_collections:
+                continue
+
+            for bone in collection.bones_recursive:
+                pose_bone = rig.pose.bones.get(bone.name)
+
+                """Check if prop_id contains rotation property and change it to pose bone's current rotation_mode"""
+                rot_index = next((i for i, s in enumerate(keying_set) if re.compile(r"^rotation.*").match(s)), None)
+                if rot_index != None:
+                    if pose_bone.rotation_mode in ['QUATERNION', 'AXIS_ANGLE']:
+                        keying_set[rot_index] = f"rotation_{pose_bone.rotation_mode.lower()}"
+                    else:
+                        keying_set[rot_index] = "rotation_euler"
+
+                """Insert keyframe"""
+                for prop in keying_set:
+                    pose_bone.keyframe_insert(data_path=f"{prop}", frame=frame)
+
+    def execute(self, context):
+        rig = get_ponyrig()
+        keying_set = ["location", "rotation_quaternion", "scale"]
+        current_frame = context.scene.frame_current
+        excluded_collections = {'Rigging'}
+
+        self.keyframe_bone_from_collections(rig, excluded_collections, keying_set, current_frame)
+
+        return {'FINISHED'}
+
+
+class POSE_OT_ponyrig_reset(Operator):
+    """Reset bones transforms to their default values"""
+
+    bl_idname = 'pose.ponyrig_rest'
+    bl_label = "Reset Rig"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    reset_transforms: BoolProperty(
+        name="Transforms", default=True, description="Reset bone transforms"
+    ) # type: ignore
+    selection_only: BoolProperty(
+        name="Selected Only",
+        default=False,
+        description="Affect selected bones rather than all bones",
+    ) # type: ignore
+
+    def reset_rig(self, rig:Object, reset_transforms=True, pbones=[]):
+        # TODO: Add reset bone properties
+
+        if not pbones:
+            pbones = rig.pose.bones
+        for pb in pbones:
+            if reset_transforms:
+                pb.location = (0, 0, 0)
+                pb.rotation_euler = (0, 0, 0)
+                pb.rotation_quaternion = (1, 0, 0, 0)
+                pb.scale = (1, 1, 1)
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+
+        # col = layout.column()
+        # col.prop(self, "reset_transforms")
+
+        col = layout.column()
+        col.prop(self, "selection_only")
+
+    def execute(self, context):
+        rig = get_ponyrig()
+        pbones = rig.pose.bones
+        if self.selection_only:
+            pbones = context.selected_pose_bones
+
+        self.reset_rig(
+            rig,
+            reset_transforms = self.reset_transforms,
+            pbones = pbones
+        )
+
+        return {'FINISHED'}
+
+
 classes = (
     PonyRig_OutlineItem, 
     PonyRig_RigPreferences, 
     PONY_UL_collections, 
     PONY_PT_MAIN, 
     POSE_OT_snap_bake, 
+    POSE_OT_ponyrig_reset,
     POSE_OT_update_outline_items,
+    POSE_OT_ponyrig_keyframe_all_ctrl_bones,
     PONY_PT_bone_collections, 
     PONY_PT_bone_properties,
     PONY_PT_fk_properties,
