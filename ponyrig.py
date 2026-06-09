@@ -553,6 +553,10 @@ class PONY_PT_face_properties(PonyRigPanel, Panel):
             slider_name="Lip Corner Jaw Influence",
         )
 
+    @classmethod
+    def poll(cls, context):
+        return get_ponyrig()
+
 
 class PONY_UL_collections(UIList):
     """Draw outline items in a UIList"""
@@ -929,6 +933,5 @@ def unregister():
         pass
 
 
-run_from_vscode = True
-if __name__ == '__main__' or run_from_vscode:
+if __name__ == '__main__':
     register()
